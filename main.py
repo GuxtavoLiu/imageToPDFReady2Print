@@ -1,12 +1,13 @@
 import os
+import tkinter as tk
+from threading import Thread
+from tkinter import filedialog, messagebox
+
 from PIL import Image
 from fpdf import FPDF
-import tkinter as tk
-from tkinter import filedialog, messagebox
-from threading import Thread
 
 
-def images_to_pdf(folder_path):
+def images_to_pdf(folder_path, max_height_mm=None):
     # Definindo as dimensões de uma folha A4 em milímetros e a margem em centímetros
     A4_WIDTH_MM = 210
     A4_HEIGHT_MM = 297
@@ -22,29 +23,24 @@ def images_to_pdf(folder_path):
     # Listando todos os arquivos da pasta fornecida
     for filename in os.listdir(folder_path):
         if filename.lower().endswith(('.png', '.jpeg', '.jpg')):
-            # Caminho completo para a imagem
             image_path = os.path.join(folder_path, filename)
 
-            # Abrindo a imagem e obtendo suas dimensões
             with Image.open(image_path) as img:
                 width, height = img.size
 
-                # Calculando a proporção da imagem
-                ratio = min(max_image_width / width, max_image_height / height)
+                # Aplicar a altura máxima se especificada
+                if max_height_mm and height > max_height_mm:
+                    ratio = max_height_mm / height
+                else:
+                    ratio = min(max_image_width / width, max_image_height / height)
 
-                # Redimensionando a imagem proporcionalmente
                 new_width = int(width * ratio)
                 new_height = int(height * ratio)
 
-                # Criando um objeto PDF
                 pdf = FPDF(unit="mm", format="A4")
                 pdf.add_page()
-
-                # Adicionando a imagem ao PDF
-                # Convertendo a posição da margem para milímetros e adicionando a imagem
                 pdf.image(image_path, x=margin_mm, y=margin_mm, w=new_width, h=new_height)
 
-                # Salvando o PDF com o mesmo nome da imagem, mas com a extensão .pdf
                 pdf_filename = os.path.splitext(filename)[0] + '.pdf'
                 pdf.output(os.path.join(folder_path, pdf_filename))
 
@@ -59,8 +55,14 @@ def convert_images_to_pdf():
     folder = folder_path_label.cget("text")
     if folder:
         try:
+            max_height = max_height_entry.get()
+            if not max_height or int(max_height) == 0:
+                max_height = None
+            else:
+                max_height = int(max_height) * 10  # Convertendo de cm para mm
+
             # Executando a função de conversão em uma thread separada
-            Thread(target=images_to_pdf, args=(folder,)).start()
+            Thread(target=images_to_pdf, args=(folder, max_height)).start()
             messagebox.showinfo("Conversão", "Conversão concluída com sucesso!")
         except Exception as e:
             messagebox.showerror("Erro", str(e))
@@ -68,28 +70,25 @@ def convert_images_to_pdf():
         messagebox.showwarning("Aviso", "Por favor, selecione uma pasta primeiro.")
 
 
-# images_to_pdf("C:\\Users\\gusta\\Downloads")
-
-# Exemplo de uso:
-# images_to_pdf("/caminho/para/a/pasta")
-# Nota: Substitua "/caminho/para/a/pasta" com o caminho real da pasta onde estão as imagens.
-
-
-# Inicializando a janela da interface gráfica
 window = tk.Tk()
 window.title("Conversor de Imagens para PDF")
+window.geometry("400x200")  # Tamanho mínimo da janela
 
-# Botão para selecionar a pasta
 select_folder_button = tk.Button(window, text="Selecionar Pasta", command=select_folder)
 select_folder_button.pack(pady=10)
 
-# Rótulo para exibir o caminho da pasta
 folder_path_label = tk.Label(window, text="", fg="blue")
 folder_path_label.pack(pady=10)
 
-# Botão para iniciar a conversão
+max_height_entry = tk.Entry(window)
+max_height_entry.pack(pady=10)
+max_height_label = tk.Label(window, text="Altura máxima em cm (deixe vazio para padrão):")
+max_height_label.pack()
+
 convert_button = tk.Button(window, text="Converter", command=convert_images_to_pdf)
 convert_button.pack(pady=10)
 
-# Executando a interface gráfica
+footer_label = tk.Label(window, text="2023 © 100LIUMITES LTDA - Todos os direitos reservados", fg="grey")
+footer_label.pack(side="bottom", fill="x", pady=10)
+
 window.mainloop()
