@@ -1,6 +1,9 @@
 import os
 from PIL import Image
 from fpdf import FPDF
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from threading import Thread
 
 
 def images_to_pdf(folder_path):
@@ -46,7 +49,47 @@ def images_to_pdf(folder_path):
                 pdf.output(os.path.join(folder_path, pdf_filename))
 
 
-images_to_pdf("C:\\Users\\gusta\\Downloads")
+def select_folder():
+    folder_path = filedialog.askdirectory()
+    folder_path_label.config(text=folder_path)
+    return folder_path
+
+
+def convert_images_to_pdf():
+    folder = folder_path_label.cget("text")
+    if folder:
+        try:
+            # Executando a função de conversão em uma thread separada
+            Thread(target=images_to_pdf, args=(folder,)).start()
+            messagebox.showinfo("Conversão", "Conversão concluída com sucesso!")
+        except Exception as e:
+            messagebox.showerror("Erro", str(e))
+    else:
+        messagebox.showwarning("Aviso", "Por favor, selecione uma pasta primeiro.")
+
+
+# images_to_pdf("C:\\Users\\gusta\\Downloads")
+
 # Exemplo de uso:
 # images_to_pdf("/caminho/para/a/pasta")
 # Nota: Substitua "/caminho/para/a/pasta" com o caminho real da pasta onde estão as imagens.
+
+
+# Inicializando a janela da interface gráfica
+window = tk.Tk()
+window.title("Conversor de Imagens para PDF")
+
+# Botão para selecionar a pasta
+select_folder_button = tk.Button(window, text="Selecionar Pasta", command=select_folder)
+select_folder_button.pack(pady=10)
+
+# Rótulo para exibir o caminho da pasta
+folder_path_label = tk.Label(window, text="", fg="blue")
+folder_path_label.pack(pady=10)
+
+# Botão para iniciar a conversão
+convert_button = tk.Button(window, text="Converter", command=convert_images_to_pdf)
+convert_button.pack(pady=10)
+
+# Executando a interface gráfica
+window.mainloop()
